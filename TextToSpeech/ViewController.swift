@@ -15,12 +15,14 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
     @IBOutlet weak var speak: UIButton!
     @IBOutlet weak var listen: UIButton!
     
+    private var recordedFileURL = URL(fileURLWithPath: "voice.wav", isDirectory: false, relativeTo: URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!))
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale.init(identifier: "ko-KR"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     private var isRunning: Bool = false
-        
+    private var output: AVAudioFile?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -61,10 +63,11 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
         }
         
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-
+        
         guard let recognitionRequest = recognitionRequest else {
             fatalError("Unable to create an SFSpeechAudioBufferRecognitionRequest object")
         }
+        
         recognitionRequest.shouldReportPartialResults = true
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest, resultHandler: { (result, error) in
             var isFinal = false
@@ -96,13 +99,38 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
     }
     
     @IBAction func listen(_ sender: Any) {
-        let synth = AVSpeechSynthesizer()
-        let myUtterance = AVSpeechUtterance(string: testField.text!)
-        myUtterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
-        myUtterance.pitchMultiplier = 0.7
-        myUtterance.rate = 0.5
-        print(myUtterance)
-        synth.speak(myUtterance)
+        let synthesizer = AVSpeechSynthesizer()
+        let utterance = AVSpeechUtterance(string: testField.text!)
+        utterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
+        utterance.rate = 0.5
+        utterance.pitchMultiplier = 1
+        var output: AVAudioFile?
+        print("utterance = \(utterance)")
+        
+        synthesizer.speak(utterance)
+//        synthesizer.write(utterance) { (buffer: AVAudioBuffer) in
+//            guard var pcmBuffer = buffer as? AVAudioPCMBuffer else {
+//                fatalError("unknown buffer type: \(buffer)")
+//            }
+//            if pcmBuffer.frameLength == 0 {
+//                print("pcmBuffer = 0")
+//            } else {
+//                do{
+//                    // append buffer to file
+//                    if output == nil {
+//                        print("output == nil")
+//                        print("URL = \(self.recordedFileURL)")
+//                        output = try AVAudioFile(
+//                            forWriting: self.recordedFileURL,
+//                            settings: pcmBuffer.format.settings,
+//                            commonFormat: .pcmFormatInt16,
+//                            interleaved: false)
+//                    }
+//                    try self.output?.write(from: pcmBuffer)
+//                } catch {
+//                    print("error")
+//                }
+//            }
+//        }
     }
 }
-
