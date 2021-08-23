@@ -21,7 +21,7 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     private var isRunning: Bool = false
-    private var output: AVAudioFile?
+    private var audioFile: AVAudioFile?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,18 +44,14 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
     }
     
     func startRecording() {
-        //recognitionTask = SFSpeechRecognitionTask
         if recognitionTask != nil {
             recognitionTask?.cancel()
             recognitionTask = nil
         }
         
         let audioSession = AVAudioSession.sharedInstance()
-        let inputNode = self.audioEngine.inputNode
-        
         do {
-            //try audioSession.setCategory(AVAudioSession.Category.playAndRecord, mode: .default, options: [.defaultToSpeaker])
-            try audioSession.setCategory(AVAudioSession.Category.playAndRecord)
+            try audioSession.setCategory(AVAudioSession.Category.playAndRecord, mode: .default, options: .defaultToSpeaker)
             try audioSession.setMode(AVAudioSession.Mode.measurement)
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
@@ -63,6 +59,8 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
         }
         
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        
+        let inputNode = audioEngine.inputNode
         
         guard let recognitionRequest = recognitionRequest else {
             fatalError("Unable to create an SFSpeechAudioBufferRecognitionRequest object")
@@ -84,7 +82,7 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
             }
         })
         
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        let recordingFormat = inputNode.inputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
             self.recognitionRequest?.append(buffer)
         }
@@ -94,8 +92,6 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
         } catch {
             print("audioEngine couldn't start because of an error.")
         }
-        testField.text = ""
-        
     }
     
     @IBAction func listen(_ sender: Any) {
@@ -104,33 +100,7 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
         utterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
         utterance.rate = 0.5
         utterance.pitchMultiplier = 1
-        var output: AVAudioFile?
-        print("utterance = \(utterance)")
-        
+        print(utterance)
         synthesizer.speak(utterance)
-//        synthesizer.write(utterance) { (buffer: AVAudioBuffer) in
-//            guard var pcmBuffer = buffer as? AVAudioPCMBuffer else {
-//                fatalError("unknown buffer type: \(buffer)")
-//            }
-//            if pcmBuffer.frameLength == 0 {
-//                print("pcmBuffer = 0")
-//            } else {
-//                do{
-//                    // append buffer to file
-//                    if output == nil {
-//                        print("output == nil")
-//                        print("URL = \(self.recordedFileURL)")
-//                        output = try AVAudioFile(
-//                            forWriting: self.recordedFileURL,
-//                            settings: pcmBuffer.format.settings,
-//                            commonFormat: .pcmFormatInt16,
-//                            interleaved: false)
-//                    }
-//                    try self.output?.write(from: pcmBuffer)
-//                } catch {
-//                    print("error")
-//                }
-//            }
-//        }
     }
 }
