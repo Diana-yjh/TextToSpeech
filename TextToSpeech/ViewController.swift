@@ -9,7 +9,7 @@ import UIKit
 import AVFoundation
 import Speech //iOS 10.0  이상부터 가능
 
-class ViewController: UIViewController, SFSpeechRecognizerDelegate {
+class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynthesizerDelegate {
     
     @IBOutlet weak var testField: UITextField!
     @IBOutlet weak var speak: UIButton!
@@ -20,13 +20,17 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
-    private var isRunning: Bool = false
     private var audioFile: AVAudioFile?
+    private var isRunning: Bool = false
+    private var isSpeaking: Bool = false
+    
+    private let synthesizer = AVSpeechSynthesizer()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         speechRecognizer?.delegate = self
+        synthesizer.delegate = self
     }
     
     @IBAction func speak(_ sender: Any) {
@@ -95,12 +99,32 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate {
     }
     
     @IBAction func listen(_ sender: Any) {
-        let synthesizer = AVSpeechSynthesizer()
+        let speakSynthesizer = AVSpeechSynthesizer()
         let utterance = AVSpeechUtterance(string: testField.text!)
-        utterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
+        utterance.voice = AVSpeechSynthesisVoice(identifier: "ko-KR")
         utterance.rate = 0.5
         utterance.pitchMultiplier = 1
-        print(utterance)
-        synthesizer.speak(utterance)
+        print("utterance = \(utterance)")
+        print("synthesizer = \(synthesizer)")
+        
+        speakSynthesizer.speak(utterance)
+        
+        synthesizer.write(utterance) { (buffer) in
+            let audioBuffer = buffer as! AVAudioPCMBuffer
+            if audioBuffer.frameLength == 0 {
+                print("buffer format = \(audioBuffer.format.settings)")
+                print("utterance.voice.settings = \(utterance.voice!.audioFileSettings)")
+                print("Finished")
+            } else {
+                do{
+                    let output = try AVAudioFile(forWriting: self.recordedFileURL, settings: utterance.voice!.audioFileSettings, commonFormat: .pcmFormatInt16, interleaved: false)
+                    try output.write(from: audioBuffer)
+                    print("URL: \(self.recordedFileURL)")
+                    print("buffer = \(audioBuffer)")
+                } catch {
+                    print("error")
+                }
+            }
+        }
     }
 }
