@@ -25,7 +25,9 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
     private var isSpeaking: Bool = false
     private var output: AVAudioFile!
     private let synthesizer = AVSpeechSynthesizer()
-    
+    private var arrayForSpeaking: [String] = []
+    private var firstWord: String = ""
+    var beforeLength = 0
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -55,7 +57,7 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
         
         let audioSession = AVAudioSession.sharedInstance()
         do {
-            try audioSession.setCategory(AVAudioSession.Category.playAndRecord, mode: .default, options: .defaultToSpeaker)
+            try audioSession.setCategory(.playAndRecord, mode: .spokenAudio, options: [.allowBluetooth, .allowBluetoothA2DP])
             try audioSession.setMode(AVAudioSession.Mode.measurement)
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
@@ -72,10 +74,10 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
         
         recognitionRequest.shouldReportPartialResults = true
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest, resultHandler: { (result, error) in
-//            NSLog("recognitionTask: \(String(describing: result?.bestTranscription.formattedString))")
             var isFinal = false
+            
             if result != nil {
-                self.testField.text = result?.bestTranscription.formattedString
+                self.toCheckIfThereAreAnythingToSpeak(result: result)
                 isFinal = (result?.isFinal)!
             }
             if error != nil || isFinal {
@@ -99,27 +101,42 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
         }
     }
     
-    @IBAction func listen(_ sender: Any) {
+    func toCheckIfThereAreAnythingToSpeak(result: SFSpeechRecognitionResult?){
+        let arrayForResult = result!.bestTranscription.formattedString.split(separator: " ").map{String($0)}
+        
+        if arrayForResult.count > beforeLength {
+            if firstWord != arrayForResult.last! {
+                print("speak: \(arrayForResult.last!)")
+                textToSpeech(text: arrayForResult.last!)
+            }
+            firstWord = arrayForResult.last!
+            beforeLength = arrayForResult.count
+        }
+    }
+    
+    func textToSpeech(text: String){
         let speakSynthesizer = AVSpeechSynthesizer()
-        let utterance = AVSpeechUtterance(string: testField.text!)
+        let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
         utterance.rate = 0.5
         utterance.pitchMultiplier = 1
-        
         speakSynthesizer.speak(utterance)
-        
+    }
+    
+    @IBAction func listen(_ sender: Any) {
+        let utterance = AVSpeechUtterance(string: testField.text!)
+
         synthesizer.write(utterance) { (buffer) in
             let audioBuffer = buffer as! AVAudioPCMBuffer
             if audioBuffer.frameLength == 0 {
-                print("Finished")
+                NSLog("Finished")
             } else {
                 do{
-
                     if self.output == nil {
                         self.output = try AVAudioFile(forWriting: self.recordedFileURL, settings: audioBuffer.format.settings , commonFormat: .pcmFormatInt16, interleaved: false)
                     }
                     try self.output.write(from: audioBuffer)
-                    print("buffer = \(audioBuffer)")
+                    NSLog("buffer = \(audioBuffer)")
                 } catch {
                     print("error")
                 }
