@@ -27,7 +27,8 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
     private let synthesizer = AVSpeechSynthesizer()
     private var arrayForSpeaking: [String] = []
     private var firstWord: String = ""
-    var beforeLength = 0
+    private var index: Int = 0
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -57,9 +58,7 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
         
         let audioSession = AVAudioSession.sharedInstance()
         do {
-            try audioSession.setCategory(.playAndRecord, mode: .spokenAudio, options: [.allowBluetooth, .allowBluetoothA2DP])
-            try audioSession.setMode(AVAudioSession.Mode.measurement)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            try! audioSession.setCategory(.playAndRecord, mode: .spokenAudio ,options: [.defaultToSpeaker ,.allowAirPlay , .allowBluetooth])
         } catch {
             print("audioSession properties weren't set because of an error.")
         }
@@ -102,16 +101,18 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
     }
     
     func toCheckIfThereAreAnythingToSpeak(result: SFSpeechRecognitionResult?){
-        let arrayForResult = result!.bestTranscription.formattedString.split(separator: " ").map{String($0)}
+        var arrayForResult = result!.bestTranscription.formattedString.split(separator: " ").map{String($0)}
+        NSLog("arrayForResult = \(arrayForResult)")
         
-        if arrayForResult.count > beforeLength {
-            if firstWord != arrayForResult.last! {
-                print("speak: \(arrayForResult.last!)")
-                textToSpeech(text: arrayForResult.last!)
+        if firstWord == arrayForResult[index] {
+            index += 1
+            if firstWord != "" {
+                textToSpeech(text: firstWord)
+                print("firstWord = \(firstWord)")
             }
-            firstWord = arrayForResult.last!
-            beforeLength = arrayForResult.count
         }
+        
+        firstWord = arrayForResult[arrayForResult.endIndex]
     }
     
     func textToSpeech(text: String){
@@ -125,7 +126,7 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
     
     @IBAction func listen(_ sender: Any) {
         let utterance = AVSpeechUtterance(string: testField.text!)
-
+        
         synthesizer.write(utterance) { (buffer) in
             let audioBuffer = buffer as! AVAudioPCMBuffer
             if audioBuffer.frameLength == 0 {
