@@ -103,18 +103,21 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
     func toCheckIfThereAreAnythingToSpeak(result: SFSpeechRecognitionResult?) {
         var arrayForResult = result!.bestTranscription.formattedString.split(separator: " ").map{String($0)}
         NSLog("arrayForResult = \(arrayForResult)")
-        if index > arrayForResult.endIndex - 1 {
-            return
-        }
         
-        if firstWord == arrayForResult[index] {
-            if index == arrayForResult.endIndex - 1 {
-                textToSpeech(text: arrayForResult[index])
-                index += 1
+       
+            if index > arrayForResult.endIndex - 1 {
+                print("= = = = = = return printed = = = = = =")
+                return
             }
-        } else {
-            firstWord = arrayForResult[index]
-        }
+            
+            if firstWord == arrayForResult[index] {
+                if index == arrayForResult.endIndex - 1 {
+                    textToSpeech(text: arrayForResult[index])
+                    index += 1
+                }
+            } else {
+                firstWord = arrayForResult[index]
+            }
     }
     
     func textToSpeech(text: String){
