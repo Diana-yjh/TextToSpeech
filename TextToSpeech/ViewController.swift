@@ -102,9 +102,8 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
     
     func toCheckIfThereAreAnythingToSpeak(result: SFSpeechRecognitionResult?) {
         var arrayForResult = result!.bestTranscription.formattedString.split(separator: " ").map{String($0)}
-        NSLog("arrayForResult = \(arrayForResult)")
+        print("arrayForResult = \(arrayForResult)")
         
-       
             if index > arrayForResult.endIndex - 1 {
                 print("= = = = = = return printed = = = = = =")
                 return
@@ -112,8 +111,14 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
             
             if firstWord == arrayForResult[index] {
                 if index == arrayForResult.endIndex - 1 {
+                    print("text = \(arrayForResult[index])")
                     textToSpeech(text: arrayForResult[index])
                     index += 1
+                } else if index < arrayForResult.endIndex - 1 {
+                    textToSpeech(text: arrayForResult[index])
+                    print("text = \(arrayForResult[index])")
+                    index += 1
+                    firstWord = arrayForResult[index]
                 }
             } else {
                 firstWord = arrayForResult[index]
@@ -121,7 +126,7 @@ class ViewController: UIViewController, SFSpeechRecognizerDelegate, AVSpeechSynt
     }
     
     func textToSpeech(text: String){
-        print("text = \(text)")
+//        print("text = \(text)")
         let speakSynthesizer = AVSpeechSynthesizer()
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
